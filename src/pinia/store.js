@@ -7,25 +7,9 @@ import {
 } from "vue";
 import { piniaSymbol } from "./rootStore";
 
-function createSetupStore(id, setup, pinia) {}
-
-function createOptionsStore(id, options, pinia) {
-  const { state, actions, getters } = options;
+function createSetupStore(id, setup, pinia) {
   let scope;
   const store = reactive({});
-
-  function setup() {
-    // 这里会对用户传递的state, actions,getters做处理
-    const localState = (pinia.state.value[id] = state ? state() : {});
-    const localGetters = Object.keys(getters || {}).reduce((memo, name) => {
-      memo[name] = computed(() => {
-        return getters[name].call(store);
-      });
-      return memo;
-    }, {});
-    return Object.assign(localState, actions, localGetters);
-  }
-
   const setupStore = pinia._e.run(() => {
     scope = effectScope();
     return scope.run(() => setup());
@@ -49,6 +33,25 @@ function createOptionsStore(id, options, pinia) {
   pinia._s.set(id, store);
   Object.assign(store, setupStore);
   return store;
+}
+
+function createOptionsStore(id, options, pinia) {
+  const { state, actions, getters } = options;
+
+  function setup() {
+    // 这里会对用户传递的state, actions,getters做处理
+    const localState = (pinia.state.value[id] = state ? state() : {});
+
+    const localGetters = Object.keys(getters || {}).reduce((memo, name) => {
+      memo[name] = computed(() => {
+        const store = pinia._s.get(id);
+        return getters[name].call(store);
+      });
+      return memo;
+    }, {});
+    return Object.assign(localState, actions, localGetters);
+  }
+  createSetupStore(id, setup, pinia);
 }
 
 export function defineStore(idOrOptions, setup) {
