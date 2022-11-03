@@ -7,7 +7,9 @@ import {
 } from "vue";
 import { piniaSymbol } from "./rootStore";
 
-function createSetupStore(id, setup, pinia) {}
+function createSetupStore(id, setup, pinia) {
+  
+}
 
 function createOptionsStore(id, options, pinia) {
   const { state, actions, getters } = options;
