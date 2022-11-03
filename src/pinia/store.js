@@ -7,9 +7,7 @@ import {
 } from "vue";
 import { piniaSymbol } from "./rootStore";
 
-function createSetupStore(id, setup, pinia) {
-  
-}
+function createSetupStore(id, setup, pinia) {}
 
 function createOptionsStore(id, options, pinia) {
   const { state, actions, getters } = options;
@@ -19,7 +17,13 @@ function createOptionsStore(id, options, pinia) {
   function setup() {
     // 这里会对用户传递的state, actions,getters做处理
     const localState = (pinia.state.value[id] = state ? state() : {});
-    return Object.assign(localState, actions);
+    const localGetters = Object.keys(getters || {}).reduce((memo, name) => {
+      memo[name] = computed(() => {
+        return getters[name].call(store);
+      });
+      return memo;
+    }, {});
+    return Object.assign(localState, actions, localGetters);
   }
 
   const setupStore = pinia._e.run(() => {
@@ -43,16 +47,7 @@ function createOptionsStore(id, options, pinia) {
   }
 
   pinia._s.set(id, store);
-  Object.assign(
-    store,
-    setupStore,
-    Object.keys(getters || {}).reduce((memo, name) => {
-      memo[name] = computed(() => {
-        return getters[name].call(store);
-      });
-      return memo;
-    }, {})
-  );
+  Object.assign(store, setupStore);
   return store;
 }
 
