@@ -4,12 +4,48 @@ import {
   reactive,
   effectScope,
   computed,
+  isReactive,
+  isRef,
+  toRefs,
 } from "vue";
 import { piniaSymbol } from "./rootStore";
 
-function createSetupStore(id, setup, pinia) {
+function isComputed(target) {
+  return !!(isRef(target) && target.effect);
+}
+
+function isObject(target) {
+  return !!(typeof target === "object" && target !== null);
+}
+
+function mergeReactiveObject(target, state) {
+  for (let key in state) {
+    let oldValue = target[key];
+    let newValue = state[key];
+    if (isObject(oldValue) && isObject(newValue)) {
+      target[key] = mergeReactiveObject(oldValue, newValue);
+    } else {
+      target[key] = newValue;
+    }
+  }
+  return target;
+}
+
+function createSetupStore(id, setup, pinia, isOption) {
   let scope;
-  const store = reactive({});
+  function $patch(partialStateOrMutation) {
+    if (typeof partialStateOrMutation === "object") {
+      mergeReactiveObject(pinia.state.value[id], partialStateOrMutation);
+    } else {
+      console.log(pinia.state.value[id]);
+      partialStateOrMutation(pinia.state.value[id]);
+    }
+  }
+
+  const partialStore = {
+    $patch,
+  };
+  const store = reactive(partialStore);
   const setupStore = pinia._e.run(() => {
     scope = effectScope();
     return scope.run(() => setup());
@@ -23,15 +59,27 @@ function createSetupStore(id, setup, pinia) {
     };
   }
 
+  if (!isOption) {
+    pinia.state.value[id] = {};
+  }
+
   for (let key in setupStore) {
     const prop = setupStore[key];
     if (typeof prop === "function") {
       setupStore[key] = wrapAction(key, prop);
     }
+
+    if ((isRef(prop) && !isComputed(prop)) || isReactive(prop)) {
+      if (!isOption) {
+        // setup API， 需要将state同步到整体pinia.state上
+        pinia.state.value[id][key] = prop;
+      }
+    }
   }
 
   pinia._s.set(id, store);
   Object.assign(store, setupStore);
+  console.log(pinia);
   return store;
 }
 
@@ -40,7 +88,8 @@ function createOptionsStore(id, options, pinia) {
 
   function setup() {
     // 这里会对用户传递的state, actions,getters做处理
-    const localState = (pinia.state.value[id] = state ? state() : {});
+    pinia.state.value[id] = state ? state() : {};
+    const localState = toRefs(pinia.state.value[id]);
 
     const localGetters = Object.keys(getters || {}).reduce((memo, name) => {
       memo[name] = computed(() => {
@@ -49,9 +98,9 @@ function createOptionsStore(id, options, pinia) {
       });
       return memo;
     }, {});
-    return Object.assign(localState, actions, localGetters);
+    return Object.assign({}, localState, actions, localGetters);
   }
-  createSetupStore(id, setup, pinia);
+  createSetupStore(id, setup, pinia, true);
 }
 
 export function defineStore(idOrOptions, setup) {
