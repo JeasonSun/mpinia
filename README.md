@@ -8,4 +8,8 @@
 - API
   - $patch
   - $reset
+  - $subscribe
+
+
+  
   

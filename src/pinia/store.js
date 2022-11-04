@@ -7,6 +7,7 @@ import {
   isReactive,
   isRef,
   toRefs,
+  watch
 } from "vue";
 import { piniaSymbol } from "./rootStore";
 
@@ -44,6 +45,17 @@ function createSetupStore(id, setup, pinia, isOption) {
 
   const partialStore = {
     $patch,
+    $subscribe(callback, options = {}) {
+      scope.run(() =>
+        watch(
+          pinia.state.value[id],
+          (state) => {
+            callback({ storeId: id }, state);
+          },
+          options
+        )
+      );
+    },
   };
   const store = reactive(partialStore);
   const setupStore = pinia._e.run(() => {
@@ -79,7 +91,6 @@ function createSetupStore(id, setup, pinia, isOption) {
 
   pinia._s.set(id, store);
   Object.assign(store, setupStore);
-  console.log(pinia);
   return store;
 }
 
@@ -100,7 +111,13 @@ function createOptionsStore(id, options, pinia) {
     }, {});
     return Object.assign({}, localState, actions, localGetters);
   }
-  createSetupStore(id, setup, pinia, true);
+  const store = createSetupStore(id, setup, pinia, true);
+  store.$reset = function () {
+    const newState = state ? state() : {};
+    store.$patch((state) => {
+      Object.assign(state, newState);
+    });
+  };
 }
 
 export function defineStore(idOrOptions, setup) {

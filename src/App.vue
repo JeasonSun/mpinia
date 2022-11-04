@@ -12,6 +12,14 @@ const handleClick1 = () => {
   store1.$patch((state) => {
     state.count = 155;
   });
+  store1.$subscribe((mutation, type) => {
+    console.log('mutation',mutation)
+    console.log('type',type)
+  })
+};
+
+const handleReset1 = () => {
+  store1.$reset();
 };
 
 const store2 = useCounterStore2();
@@ -27,6 +35,7 @@ const handleClick2 = () => {
   <p>--------------options------------</p>
   {{ store1.count }} / {{ store1.double }}
   <button @click="handleClick1">修改状态</button>
+  <button @click="handleReset1">重置状态</button>
   <hr />
   <p>-------------setup----------------</p>
   {{ store2.count }} / {{ store2.double }}
