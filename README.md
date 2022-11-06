@@ -9,6 +9,7 @@
   - $patch
   - $reset
   - $subscribe
+  - $onAction
 
 
   

@@ -7,9 +7,10 @@ import {
   isReactive,
   isRef,
   toRefs,
-  watch
+  watch,
 } from "vue";
 import { piniaSymbol } from "./rootStore";
+import { addSubscription, triggerSubscriptions } from "./subscribe";
 
 function isComputed(target) {
   return !!(isRef(target) && target.effect);
@@ -34,11 +35,13 @@ function mergeReactiveObject(target, state) {
 
 function createSetupStore(id, setup, pinia, isOption) {
   let scope;
+  let actionSubscriptions = [];
+
   function $patch(partialStateOrMutation) {
     if (typeof partialStateOrMutation === "object") {
       mergeReactiveObject(pinia.state.value[id], partialStateOrMutation);
     } else {
-      console.log(pinia.state.value[id]);
+      // console.log(pinia.state.value[id]);
       partialStateOrMutation(pinia.state.value[id]);
     }
   }
@@ -56,6 +59,7 @@ function createSetupStore(id, setup, pinia, isOption) {
         )
       );
     },
+    $onAction: addSubscription.bind(null, actionSubscriptions),
   };
   const store = reactive(partialStore);
   const setupStore = pinia._e.run(() => {
@@ -65,8 +69,38 @@ function createSetupStore(id, setup, pinia, isOption) {
 
   function wrapAction(name, action) {
     return function () {
-      let ret = action.apply(store, arguments);
-      // TODO: action执行后可能是Promise
+      const afterCallbackList = [];
+      const onErrorCallbackList = [];
+
+      function after(callback) {
+        addSubscription(afterCallbackList, callback);
+      }
+
+      function onError(callback) {
+        addSubscription(onErrorCallbackList, callback);
+      }
+
+      triggerSubscriptions(actionSubscriptions, { after, onError });
+
+      let ret;
+      try {
+        ret = action.apply(store, arguments);
+      } catch (error) {
+        triggerSubscriptions(onErrorCallbackList, error);
+      }
+
+      if (ret instanceof Promise) {
+        return ret
+          .then((value) => {
+            triggerSubscriptions(afterCallbackList, value);
+            return value;
+          })
+          .catch((error) => {
+            triggerSubscriptions(onErrorCallbackList, error);
+          });
+      }
+      triggerSubscriptions(afterCallbackList, ret);
+
       return ret;
     };
   }

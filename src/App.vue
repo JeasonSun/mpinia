@@ -7,16 +7,29 @@ const { increment } = useCounterStore1();
 
 const handleClick1 = () => {
   // store1.increment(1);
-  // increment(1);
+  increment(1);
   // store1.$patch({count: 1000})
-  store1.$patch((state) => {
-    state.count = 155;
-  });
-  store1.$subscribe((mutation, type) => {
-    console.log('mutation',mutation)
-    console.log('type',type)
-  })
+  // store1.$patch((state) => {
+  //   state.count = 155;
+  // });
+  // store1.$subscribe((mutation, type) => {
+  //   console.log("mutation", mutation);
+  //   console.log("type", type);
+  // });
 };
+store1.$onAction(({ after, onError }) => {
+  console.log("before", store1.count);
+  after(() => {
+    console.log("after", store1.count);
+  });
+  after(() => {
+    console.log("after", store1.count);
+  });
+
+  onError((error) => {
+    console.log("error", error);
+  });
+});
 
 const handleReset1 = () => {
   store1.$reset();
