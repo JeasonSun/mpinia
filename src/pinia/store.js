@@ -139,6 +139,14 @@ function createSetupStore(id, setup, pinia, isOption) {
       });
     },
   });
+
+  store.$id = id;
+  pinia._p.forEach((plugin) => {
+    Object.assign(
+      store,
+      scope.run(() => plugin({store}))
+    );
+  });
   return store;
 }
 

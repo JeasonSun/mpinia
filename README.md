@@ -12,6 +12,8 @@
   - $onAction
   - $dispose
   - $state
+- plugin
+  - use
 
 
   
