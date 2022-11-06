@@ -35,6 +35,14 @@ const handleReset1 = () => {
   store1.$reset();
 };
 
+const handleDispose = () => {
+  store1.$dispose();
+};
+
+const handleSetState = () => {
+  store1.$state = { count: 12032 };
+};
+
 const store2 = useCounterStore2();
 const handleClick2 = () => {
   // store2.increment();
@@ -49,6 +57,9 @@ const handleClick2 = () => {
   {{ store1.count }} / {{ store1.double }}
   <button @click="handleClick1">修改状态</button>
   <button @click="handleReset1">重置状态</button>
+  <button @click="handleDispose">解除响应式</button>
+  <button @click="handleSetState">修改$state</button>
+
   <hr />
   <p>-------------setup----------------</p>
   {{ store2.count }} / {{ store2.double }}

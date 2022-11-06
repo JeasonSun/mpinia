@@ -60,6 +60,11 @@ function createSetupStore(id, setup, pinia, isOption) {
       );
     },
     $onAction: addSubscription.bind(null, actionSubscriptions),
+    $dispose() {
+      scope.stop();
+      actionSubscriptions = [];
+      pinia._s.delete(id);
+    },
   };
   const store = reactive(partialStore);
   const setupStore = pinia._e.run(() => {
@@ -125,6 +130,15 @@ function createSetupStore(id, setup, pinia, isOption) {
 
   pinia._s.set(id, store);
   Object.assign(store, setupStore);
+
+  Object.defineProperty(store, "$state", {
+    get: () => pinia.state.value[id],
+    set: (state) => {
+      $patch(($state) => {
+        Object.assign($state, state);
+      });
+    },
+  });
   return store;
 }
 

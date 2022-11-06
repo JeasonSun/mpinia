@@ -10,6 +10,8 @@
   - $reset
   - $subscribe
   - $onAction
+  - $dispose
+  - $state
 
 
   
