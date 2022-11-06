@@ -2,6 +2,7 @@ import { createApp } from "vue";
 import { createPinia } from "@/pinia";
 // import { createPinia } from "pinia";
 import App from "./App.vue";
+import { useCounterStore1} from './stores/counter1';
 
 const app = createApp(App);
 
@@ -18,5 +19,8 @@ pinia.use(function ({ store }) {
 });
 
 app.use(pinia);
+
+const store1 = useCounterStore1();
+console.log(store1.count)
 
 app.mount("#app");

@@ -9,6 +9,7 @@ import {
   toRefs,
   watch,
 } from "vue";
+import { setActivePinia, activePinia} from './createPinia'
 import { piniaSymbol } from "./rootStore";
 import { addSubscription, triggerSubscriptions } from "./subscribe";
 
@@ -144,7 +145,7 @@ function createSetupStore(id, setup, pinia, isOption) {
   pinia._p.forEach((plugin) => {
     Object.assign(
       store,
-      scope.run(() => plugin({store}))
+      scope.run(() => plugin({ store }))
     );
   });
   return store;
@@ -191,7 +192,12 @@ export function defineStore(idOrOptions, setup) {
 
   function useStore() {
     let instance = getCurrentInstance();
-    const pinia = instance && inject(piniaSymbol);
+    let pinia = instance && inject(piniaSymbol);
+    if (pinia) {
+      setActivePinia(pinia);
+    }
+
+    pinia = activePinia
 
     if (!pinia._s.has(id)) {
       if (isSetupStore) {
